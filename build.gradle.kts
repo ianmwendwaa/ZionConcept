@@ -14,8 +14,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
     implementation("io.ktor:ktor-client-core:3.1.0")
     implementation("io.ktor:ktor-client-cio:3.1.0")
-// Serialization Plugins for Client
     implementation("io.ktor:ktor-client-content-negotiation:3.1.0")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:3.6.1")
     testImplementation(kotlin("test"))
 }
 

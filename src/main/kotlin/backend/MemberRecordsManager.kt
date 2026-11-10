@@ -2,10 +2,16 @@ package backend
 
 import helper.CoreHelpers
 import input_manager.InputManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import models.MemberData
 import models.NewMemberData
+import server_comms.ServerBridger
 import java.util.Locale.getDefault
 
 class MemberRecordsManager(private val inputManager: InputManager) {
@@ -14,7 +20,9 @@ class MemberRecordsManager(private val inputManager: InputManager) {
         isLenient = true
         prettyPrint = true
     }
+    val serverBridger = ServerBridger()
     fun addMember(){
+        val coroutineScope = CoroutineScope(Dispatchers.IO)
         val newMemberName = inputManager.promptStrInput("Enter new member's name: ")
         var newMembersPhoneNumber = inputManager.promptStrInput("Phone number: ")
 
@@ -38,20 +46,23 @@ class MemberRecordsManager(private val inputManager: InputManager) {
         val newMemberData = NewMemberData(
             name = newMemberName, phoneNumber = newMembersPhoneNumber, genNumber = newMembersUniqueNumber
         )
-        val serializedData = json.encodeToString(newMemberData)
-        println("Data going to the server: ")
-        println(serializedData)
+        runBlocking {
+            serverBridger.postNewMemberData(newMemberData)
+        }
+        println("Done!")
     }
-    fun viewMembers(): List<MemberData>{
-        return emptyList()
+    fun viewMembers(){
+        runBlocking {
+            println(serverBridger.fetchAllMembers())
+        }
     }
     fun deleteMember(){
         // Delete using the member number
         val redNumber = inputManager.promptStrInput("Enter member number of the member you wish to delete: ")
         if (redNumber.isEmpty()) println("Please provide a member number.")
-
-
-
+        runBlocking {
+            serverBridger.deleteMember(redNumber)
+        }
     }
     fun updateMember(){
 

@@ -1,16 +1,22 @@
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import kotlinx.coroutines.Dispatchers
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.v1.core.Table
+import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.Database
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.experimental.newSuspendedTransaction
-import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 
 @Serializable
-data class Members(val name: String, val phoneNumber: String, val memberNumber: String)
+data class NewMemberData(
+    @SerialName("new_member_name") val receivedName: String,
+    @SerialName("new_member_phone_num") val receivedPhoneNum: String,
+    @SerialName("new_member_num") val receivedGenNum: String
+)
 
 object MembersTable: Table("zion_elders_members"){
     val memberID = integer("member_id").autoIncrement()
@@ -44,21 +50,23 @@ object DatabaseFactory {
 
 // Member CRUD service
 class MemberService {
-    suspend fun createMember(name: String, phoneNumber: String, memberNumber: String): Int = DatabaseFactory.dbQuery{
+    suspend fun createMember(data: NewMemberData): Int = DatabaseFactory.dbQuery{
         MembersTable.insert {
-            it[MembersTable.memberName] = name
-            it[MembersTable.memberPhoneNumber] = phoneNumber
-            it[MembersTable.memberNumber] = memberNumber
+            it[MembersTable.memberName] = data.receivedName
+            it[MembersTable.memberPhoneNumber] = data.receivedPhoneNum
+            it[MembersTable.memberNumber] = data.receivedGenNum
         } [MembersTable.memberID]
     }
-    suspend fun getAllMembers(): List<Members?> = DatabaseFactory.dbQuery{
-        return@dbQuery MembersTable.selectAll().map {
-            Members(
+    suspend fun getAllMembers(): List<NewMemberData> = DatabaseFactory.dbQuery{
+        MembersTable.selectAll().map {
+            NewMemberData(
                 it[MembersTable.memberName],
                 it[MembersTable.memberPhoneNumber],
                 it[MembersTable.memberNumber]
             )
-
         }
+    }
+    suspend fun deleteMember(memberNumberToDelete: String) {
+        MembersTable.deleteWhere { MembersTable.memberNumber eq memberNumberToDelete }
     }
 }
